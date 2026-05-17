@@ -483,11 +483,6 @@ let filterStatus = 'all';
 const TODAY = new Date().toISOString().split('T')[0];
 
 window.onload = async function() {
-  if(localStorage.getItem('nexaTheme') === 'light') document.body.classList.add('light');
-  const { data: { session } } = await supabase.auth.getSession();
-  if(session) { currentUser = session.user; showApp(); }
-  else { showAuth(); }
-};
 
 function showAuth() { document.getElementById('loaderScreen').style.display='none'; document.getElementById('authScreen').style.display='flex'; document.getElementById('appScreen').style.display='none'; }
 function showApp() { document.getElementById('loaderScreen').style.display='none'; document.getElementById('authScreen').style.display='none'; document.getElementById('appScreen').style.display='block'; document.getElementById('userBadge').textContent='👤 '+currentUser.email; loadProjects(); }
