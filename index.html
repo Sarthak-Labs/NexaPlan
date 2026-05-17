@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NexaPlan — Project Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#07111f;--card:#0f172a;--card2:#111c31;--text:#f8fafc;--muted:#94a3b8;
+  --primary:#00e5ff;--secondary:#7c5cbf;--green:#00ff9d;--yellow:#ffd166;
+  --red:#ff4d6d;--border:rgba(255,255,255,0.07);--glass:rgba(15,23,42,0.8);
+}
+body.light{
+  --bg:#edf3ff;--card:#fff;--card2:#f4f8ff;--text:#14213d;--muted:#5b6478;
+  --primary:#1d4ed8;--secondary:#6d28d9;--green:#15803d;--yellow:#b45309;
+  --red:#be123c;--border:rgba(15,23,42,0.08);--glass:rgba(255,255,255,0.95);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:.3s;}
+body:not(.light){background:linear-gradient(135deg,#050816,#07111f);}
+body.light{background:linear-gradient(135deg,#e8f0ff,#dbeafe);}
+.wrap{max-width:1400px;margin:auto;padding:20px 24px;}
+
+/* HERO */
+.hero{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+.brand h1{font-family:'Orbitron',sans-serif;font-size:2rem;color:var(--primary);letter-spacing:.02em;}
+body:not(.light) .brand h1{text-shadow:0 0 20px rgba(0,229,255,.4);}
+.brand p{color:var(--muted);font-size:.82rem;margin-top:4px;}
+.hero-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;font-size:.82rem;font-family:'DM Sans',sans-serif;transition:.2s;}
+.btn-ghost{background:var(--glass);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{opacity:.8;}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(0,229,255,.25);}
+.btn-report{background:linear-gradient(135deg,#1e3a5f,#0f2942);color:#7ec8e3;border:1px solid rgba(126,200,227,.2);}
+body.light .btn-report{background:linear-gradient(135deg,#dbeafe,#eff6ff);color:#1d4ed8;}
+.btn-report:hover{transform:translateY(-1px);}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:16px 14px;position:relative;overflow:hidden;transition:.22s;}
+.stat:hover{transform:translateY(-2px);}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--a),var(--b));}
+.stat[data-c="1"]{--a:#00e5ff;--b:#0080ff;}
+.stat[data-c="2"]{--a:#00ff9d;--b:#00c97a;}
+.stat[data-c="3"]{--a:#ffd166;--b:#f59e0b;}
+.stat[data-c="4"]{--a:#ff4d6d;--b:#e11d48;}
+.stat[data-c="5"]{--a:#a78bfa;--b:#7c3aed;}
+.stat[data-c="6"]{--a:#ff8c42;--b:#ea580c;}
+.stat-label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+.stat-val{font-family:'Orbitron',sans-serif;font-size:1.7rem;font-weight:700;margin-top:4px;}
+.stat-sub{font-size:.68rem;color:var(--muted);margin-top:2px;}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1.2fr .8fr;gap:20px;}
+.card{background:var(--glass);border:1px solid var(--border);border-radius:22px;padding:22px;backdrop-filter:blur(12px);}
+.card-title{font-family:'Orbitron',sans-serif;font-size:.85rem;color:var(--primary);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;font-weight:700;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:none;font-size:.87rem;font-family:'DM Sans',sans-serif;transition:.2s;}
+body.light input,body.light select,body.light textarea{background:#f4f8ff;border-color:rgba(15,23,42,.1);}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);}
+select option{background:var(--card);}
+textarea{min-height:70px;resize:vertical;grid-column:1/-1;}
+.span2{grid-column:1/-1;}
+.submit-btn{width:100%;margin-top:12px;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;font-weight:700;font-size:.88rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;letter-spacing:.03em;}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(0,229,255,.2);}
+
+/* FILTERS */
+.filters{display:flex;gap:8px;margin:16px 0 12px;flex-wrap:wrap;align-items:center;}
+.filters input{max-width:160px;padding:8px 12px;}
+.ftag{padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:.18s;font-family:'DM Sans',sans-serif;}
+.ftag.active,.ftag:hover{background:var(--primary);color:#000;border-color:var(--primary);}
+body.light .ftag.active,body.light .ftag:hover{color:#fff;}
+
+/* PROJECTS */
+.projects{display:flex;flex-direction:column;gap:14px;}
+.project-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:18px;padding:18px;transition:.22s;}
+body.light .project-card{background:rgba(255,255,255,.85);}
+.project-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,.15);border-color:rgba(0,229,255,.15);}
+.proj-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.proj-name{font-size:1rem;font-weight:700;}
+.proj-meta{color:var(--muted);font-size:.78rem;margin-top:6px;line-height:1.7;}
+.badge{padding:4px 12px;border-radius:999px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.badge.pending{background:rgba(255,209,102,.14);color:var(--yellow);border:1px solid rgba(255,209,102,.2);}
+.badge.progress{background:rgba(0,229,255,.12);color:var(--primary);border:1px solid rgba(0,229,255,.18);}
+.badge.done{background:rgba(0,255,157,.12);color:var(--green);border:1px solid rgba(0,255,157,.18);}
+.badge.hold{background:rgba(255,77,109,.12);color:var(--red);border:1px solid rgba(255,77,109,.18);}
+.pri-low{background:rgba(100,200,150,.12);color:#4ade80;border:1px solid rgba(100,200,150,.2);}
+.pri-medium{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.2);}
+.pri-high{background:rgba(251,100,36,.12);color:#fb923c;border:1px solid rgba(251,100,36,.2);}
+.pri-critical{background:rgba(255,50,80,.15);color:#f87171;border:1px solid rgba(255,50,80,.25);}
+
+/* PROGRESS */
+.prog-wrap{background:rgba(255,255,255,.06);border-radius:999px;height:4px;margin-top:10px;overflow:hidden;}
+body.light .prog-wrap{background:rgba(15,23,42,.08);}
+.prog-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width .6s ease;}
+
+/* TASKS */
+.task-list{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.task-item{padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid transparent;transition:.2s;}
+body.light .task-item{background:#eef4ff;border-color:rgba(15,23,42,.04);}
+.task-item:hover{border-color:var(--border);}
+.task-name-row{display:flex;align-items:center;gap:7px;font-weight:600;font-size:.85rem;flex-wrap:wrap;}
+.task-info{color:var(--muted);font-size:.73rem;margin-top:2px;}
+.cf-tag{background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.25);padding:2px 7px;border-radius:5px;font-size:.63rem;font-weight:700;}
+.task-actions{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.task-actions select{padding:6px 8px;font-size:.75rem;border-radius:8px;min-width:105px;}
+.small-btn{border:none;padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-size:.75rem;font-weight:600;transition:.18s;border:1px solid var(--border);font-family:'DM Sans',sans-serif;}
+body.light .small-btn{background:#e8f0fe;border-color:rgba(15,23,42,.07);}
+.small-btn:hover{background:rgba(0,229,255,.1);border-color:var(--primary);color:var(--primary);}
+.del-btn:hover{background:rgba(255,77,109,.12)!important;border-color:var(--red)!important;color:var(--red)!important;}
+.proj-actions{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;}
+
+/* DASHBOARD */
+.dash-box{margin-top:14px;padding:16px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid var(--border);}
+body.light .dash-box{background:#f0f5ff;}
+.dash-box h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--primary);font-weight:700;margin-bottom:10px;}
+.dash-item{font-size:.8rem;color:var(--muted);padding:6px 8px;border-radius:7px;background:rgba(255,255,255,.03);margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+body.light .dash-item{background:rgba(29,78,216,.04);}
+.dash-item::before{content:'•';color:var(--green);font-weight:700;}
+.overdue-item::before{content:'!';color:var(--red);}
+.empty-msg{color:var(--muted);font-size:.8rem;padding:4px 0;}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:28px;max-width:660px;width:100%;max-height:88vh;overflow-y:auto;animation:su .2s ease;}
+body.light .modal{background:#fff;}
+@keyframes su{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-ttl{font-family:'Orbitron',sans-serif;font-size:.95rem;color:var(--primary);}
+.close-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;padding:5px 9px;font-size:1rem;}
+.close-btn:hover{background:rgba(255,77,109,.15);color:var(--red);}
+.summary-block{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;}
+body.light .summary-block{background:#f4f8ff;border-color:rgba(15,23,42,.07);}
+.summary-block-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--primary);font-weight:700;margin-bottom:8px;}
+.summary-block p,.summary-block li{font-size:.83rem;color:var(--muted);line-height:1.7;}
+.summary-block ul{padding-left:14px;}
+.modal-foot{display:flex;gap:8px;margin-top:16px;}
+.modal-foot button{flex:1;padding:11px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:.83rem;font-family:'DM Sans',sans-serif;}
+.btn-exp{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;}
+.btn-cls{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)!important;}
+body.light .btn-cls{background:#e8f0fe;}
+.task-modal-form{display:flex;flex-direction:column;gap:12px;}
+.task-modal-form .field label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+
+/* EMPTY */
+.empty{text-align:center;padding:28px;color:var(--muted);font-size:.85rem;}
+.empty-icon{font-size:2rem;margin-bottom:8px;opacity:.35;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--primary);color:#000;padding:12px 20px;border-radius:12px;font-weight:700;font-size:.85rem;z-index:9999;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+@media(max-width:1100px){.layout{grid-template-columns:1fr;}.stats{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr;}.stats{grid-template-columns:1fr 1fr;}.wrap{padding:14px;}.brand h1{font-size:1.6rem;}}
+@media(max-width:420px){.stats{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="brand">
+      <h1>NexaPlan</h1>
+      <p>Project Command Center &nbsp;·&nbsp; Task Management &nbsp;·&nbsp; Workflow OS by Sarthak Gupta</p>
+    </div>
+    <div class="hero-btns">
+      <button class="btn btn-report" onclick="openMonthlyReport()">📊 Monthly Report</button>
+      <button class="btn btn-primary" onclick="openSummaryModal()">⚡ Workflow Summary</button>
+      <button class="btn btn-ghost" onclick="toggleTheme()">🌗 Theme</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat" data-c="1"><div class="stat-label">Ongoing</div><div class="stat-val" id="sOngoing">0</div><div class="stat-sub">Active projects</div></div>
+    <div class="stat" data-c="2"><div class="stat-label">Completed</div><div class="stat-val" id="sDone">0</div><div class="stat-sub">Delivered</div></div>
+    <div class="stat" data-c="3"><div class="stat-label">Pending</div><div class="stat-val" id="sPending">0</div><div class="stat-sub">Awaiting action</div></div>
+    <div class="stat" data-c="4"><div class="stat-label">On Hold</div><div class="stat-val" id="sHold">0</div><div class="stat-sub">Paused</div></div>
+    <div class="stat" data-c="5"><div class="stat-label">Total Tasks</div><div class="stat-val" id="sTasks">0</div><div class="stat-sub">Across all projects</div></div>
+    <div class="stat" data-c="6"><div class="stat-label">High Priority</div><div class="stat-val" id="sHigh">0</div><div class="stat-sub">Critical + High</div></div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <!-- LEFT -->
+    <div>
+      <div class="card">
+        <div class="card-title" id="formTitle">➕ New Project</div>
+        <div class="form-grid">
+          <div class="field"><label>Project Name *</label><input id="pName" placeholder="e.g. Defence Tender Q3"/></div>
+          <div class="field"><label>Status</label>
+            <select id="pStatus">
+              <option value="pending">Pending</option>
+              <option value="progress">Ongoing</option>
+              <option value="done">Completed</option>
+              <option value="hold">On Hold</option>
+            </select>
+          </div>
+          <div class="field"><label>Start Date</label><input type="date" id="pStart"/></div>
+          <div class="field"><label>End Date</label><input type="date" id="pEnd"/></div>
+          <div class="field"><label>Owner / Client</label><input id="pOwner" placeholder="Vendor / Client name"/></div>
+          <div class="field"><label>Department / Category</label><input id="pCat" placeholder="Category"/></div>
+          <div class="field span2"><label>Notes</label><textarea id="pDesc" placeholder="Compliance requirements, workflow details..."></textarea></div>
+        </div>
+        <button class="submit-btn" onclick="saveProject()" id="submitBtn">Create Project</button>
+      </div>
+
+      <div class="filters">
+        <input type="date" id="dateFilter" onchange="render()" style="max-width:160px;padding:8px 12px;"/>
+        <button class="ftag active" onclick="setFilter('all',this)">All</button>
+        <button class="ftag" onclick="setFilter('progress',this)">Ongoing</button>
+        <button class="ftag" onclick="setFilter('pending',this)">Pending</button>
+        <button class="ftag" onclick="setFilter('done',this)">Done</button>
+        <button class="ftag" onclick="setFilter('hold',this)">Hold</button>
+      </div>
+
+      <div class="projects" id="projectsContainer"></div>
+    </div>
+
+    <!-- RIGHT: DASHBOARD -->
+    <div>
+      <div class="card">
+        <div class="card-title">📊 Operational Overview</div>
+        <div class="dash-box"><h3>Completed This Month</h3><div id="dashMonth"><div class="empty-msg">No completions yet.</div></div></div>
+        <div class="dash-box"><h3>⚠ Overdue Projects</h3><div id="dashOverdue"><div class="empty-msg">No overdue items.</div></div></div>
+        <div class="dash-box"><h3>Execution Progress</h3><div id="dashProgress"><div class="empty-msg">No projects yet.</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SUMMARY MODAL -->
+<div class="overlay" id="summaryOverlay" onclick="closeIfBg(event,'summaryOverlay')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-ttl">⚡ Workflow Summary</div><button class="close-btn" onclick="closeOverlay('summaryOverlay')">✕</button></div>
+    <div id="summaryContent"></div>
+    <div class="modal-foot">
+      <button class="btn-exp" onclick="exportSummaryPDF()">⬇ Export PDF</button>
+      <button class="btn-cls" onclick="closeOverlay('summaryOverlay')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MONTHLY MODAL -->
+<div class="overlay" id="monthlyOverlay" onclick="closeIfBg(event,'monthlyOverlay')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-ttl">📊 Monthly Operations Report</div><button class="close-btn" onclick="closeOverlay('monthlyOverlay')">✕</button></div>
+    <div id="monthlyContent"></div>
+    <div class="modal-foot">
+      <button class="btn-exp" onclick="exportMonthlyPDF()">⬇ Export PDF</button>
+      <button class="btn-cls" onclick="closeOverlay('monthlyOverlay')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="overlay" id="taskOverlay" onclick="closeIfBg(event,'taskOverlay')">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head"><div class="modal-ttl" id="taskModalTitle">➕ Add Task</div><button class="close-btn" onclick="closeOverlay('taskOverlay')">✕</button></div>
+    <div class="task-modal-form">
+      <div class="field"><label>Task Name *</label><input id="tName" placeholder="e.g. Prepare compliance checklist"/></div>
+      <div class="field"><label>Priority</label>
+        <select id="tPriority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+      <div class="field"><label>Due Date</label><input type="date" id="tDue"/></div>
+      <div class="field"><label>Notes (optional)</label><input id="tNotes" placeholder="Any additional notes"/></div>
+    </div>
+    <div class="modal-foot" style="margin-top:16px;">
+      <button class="btn-exp" onclick="saveTask()" id="taskSubmitBtn">Add Task</button>
+      <button class="btn-cls" onclick="closeOverlay('taskOverlay')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────
+let editProjIdx = null;
+let taskProjIdx = null;
+let editTaskIdx = null;
+let filterStatus = 'all';
+const TODAY = new Date().toISOString().split('T')[0];
+
+// ── STORAGE (localStorage works on hosted sites) ───────────────────────
+function getProjects(){ return JSON.parse(localStorage.getItem('nexaProjects') || '[]'); }
+function saveProjects(p){ localStorage.setItem('nexaProjects', JSON.stringify(p)); }
+
+// ── HELPERS ────────────────────────────────────────────────────────────
+function esc(s){ if(!s)return''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function sLabel(s){ return {pending:'Pending',progress:'Ongoing',done:'Completed',hold:'On Hold'}[s]||s; }
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── CARRY FORWARD ──────────────────────────────────────────────────────
+function carryForward(){
+  const projects=getProjects(); let changed=false;
+  projects.forEach(p=>{
+    p.tasks.forEach(t=>{
+      if(t.status!=='done'&&t.status!=='hold'&&t.dueDate&&t.dueDate<TODAY&&!t.carriedForward){
+        t.carriedForward=true; changed=true;
+      }
+    });
+  });
+  if(changed) saveProjects(projects);
+}
+
+// ── THEME ──────────────────────────────────────────────────────────────
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  localStorage.setItem('nexaTheme', document.body.classList.contains('light')?'light':'dark');
+}
+
+// ── PROJECT FORM ───────────────────────────────────────────────────────
+function clearProjForm(){
+  ['pName','pStart','pEnd','pOwner','pCat','pDesc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pStatus').value='pending';
+  editProjIdx=null;
+  document.getElementById('formTitle').textContent='➕ New Project';
+  document.getElementById('submitBtn').textContent='Create Project';
+}
+
+function saveProject(){
+  const name=document.getElementById('pName').value.trim();
+  if(!name){ alert('Project name is required.'); return; }
+  const projects=getProjects();
+  const proj={
+    id: editProjIdx!==null ? projects[editProjIdx].id : Date.now(),
+    name,
+    status: document.getElementById('pStatus').value,
+    start: document.getElementById('pStart').value,
+    end: document.getElementById('pEnd').value,
+    owner: document.getElementById('pOwner').value.trim(),
+    category: document.getElementById('pCat').value.trim(),
+    desc: document.getElementById('pDesc').value.trim(),
+    tasks: editProjIdx!==null ? projects[editProjIdx].tasks : [],
+    createdAt: editProjIdx!==null ? projects[editProjIdx].createdAt : new Date().toISOString()
+  };
+  if(editProjIdx!==null){ projects[editProjIdx]=proj; toast('✅ Project updated!'); }
+  else { projects.unshift(proj); toast('✅ Project created!'); }
+  saveProjects(projects); clearProjForm(); render();
+}
+
+function editProject(idx){
+  const projects=getProjects(); const p=projects[idx];
+  document.getElementById('pName').value=p.name;
+  document.getElementById('pStatus').value=p.status;
+  document.getElementById('pStart').value=p.start||'';
+  document.getElementById('pEnd').value=p.end||'';
+  document.getElementById('pOwner').value=p.owner||'';
+  document.getElementById('pCat').value=p.category||'';
+  document.getElementById('pDesc').value=p.desc||'';
+  editProjIdx=idx;
+  document.getElementById('formTitle').textContent='✏️ Edit Project';
+  document.getElementById('submitBtn').textContent='Update Project';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function deleteProject(idx){
+  if(!confirm('Remove this project?')) return;
+  const projects=getProjects(); projects.splice(idx,1); saveProjects(projects); render();
+  toast('🗑 Project deleted.');
+}
+
+// ── TASK MODAL ─────────────────────────────────────────────────────────
+function openAddTask(projIdx){
+  taskProjIdx=projIdx; editTaskIdx=null;
+  document.getElementById('taskModalTitle').textContent='➕ Add Task';
+  document.getElementById('taskSubmitBtn').textContent='Add Task';
+  document.getElementById('tName').value='';
+  document.getElementById('tPriority').value='medium';
+  document.getElementById('tDue').value=TODAY;
+  document.getElementById('tNotes').value='';
+  openOverlay('taskOverlay');
+}
+
+function openEditTask(projIdx,taskIdx){
+  taskProjIdx=projIdx; editTaskIdx=taskIdx;
+  const projects=getProjects(); const t=projects[projIdx].tasks[taskIdx];
+  document.getElementById('taskModalTitle').textContent='✏️ Edit Task';
+  document.getElementById('taskSubmitBtn').textContent='Update Task';
+  document.getElementById('tName').value=t.name;
+  document.getElementById('tPriority').value=t.priority;
+  document.getElementById('tDue').value=t.dueDate||TODAY;
+  document.getElementById('tNotes').value=t.notes||'';
+  openOverlay('taskOverlay');
+}
+
+function saveTask(){
+  const name=document.getElementById('tName').value.trim();
+  if(!name){ alert('Task name is required.'); return; }
+  const projects=getProjects();
+  const task={
+    name,
+    priority: document.getElementById('tPriority').value,
+    dueDate: document.getElementById('tDue').value,
+    notes: document.getElementById('tNotes').value.trim(),
+    status: editTaskIdx!==null ? projects[taskProjIdx].tasks[editTaskIdx].status : 'pending',
+    carriedForward: editTaskIdx!==null ? projects[taskProjIdx].tasks[editTaskIdx].carriedForward : false,
+    createdAt: editTaskIdx!==null ? projects[taskProjIdx].tasks[editTaskIdx].createdAt : new Date().toISOString()
+  };
+  if(editTaskIdx!==null){ projects[taskProjIdx].tasks[editTaskIdx]=task; toast('✅ Task updated!'); }
+  else { projects[taskProjIdx].tasks.push(task); toast('✅ Task added!'); }
+  saveProjects(projects); closeOverlay('taskOverlay'); render();
+}
+
+function changeTaskStatus(pi,ti,status){
+  const projects=getProjects();
+  projects[pi].tasks[ti].status=status;
+  if(status==='done'){ projects[pi].tasks[ti].completedAt=new Date().toISOString(); projects[pi].tasks[ti].carriedForward=false; }
+  saveProjects(projects); render();
+}
+
+function deleteTask(pi,ti){
+  if(!confirm('Remove this task?')) return;
+  const projects=getProjects(); projects[pi].tasks.splice(ti,1); saveProjects(projects); render();
+  toast('🗑 Task removed.');
+}
+
+// ── FILTER ─────────────────────────────────────────────────────────────
+function setFilter(s,btn){
+  filterStatus=s;
+  document.querySelectorAll('.ftag').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); render();
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────
+function render(){
+  carryForward();
+  const allProjects=getProjects();
+  const container=document.getElementById('projectsContainer');
+  const dateF=document.getElementById('dateFilter').value;
+  let list=allProjects.slice();
+  if(dateF) list=list.filter(p=>p.start===dateF);
+  if(filterStatus!=='all') list=list.filter(p=>p.status===filterStatus);
+
+  if(list.length===0){
+    container.innerHTML=`<div class="empty"><div class="empty-icon">📋</div>${allProjects.length===0?'No projects yet. Create your first project above!':'No projects match the current filter.'}</div>`;
+  } else {
+    container.innerHTML='';
+    list.forEach(proj=>{
+      const idx=allProjects.findIndex(p=>p.id===proj.id);
+      const total=proj.tasks.length;
+      const done=proj.tasks.filter(t=>t.status==='done').length;
+      const pct=total>0?Math.round(done/total*100):0;
+
+      let taskHTML='';
+      proj.tasks.forEach((t,ti)=>{
+        const cfTag=t.carriedForward?`<span class="cf-tag">↩ CF</span>`:'';
+        taskHTML+=`
+          <div class="task-item">
+            <div style="flex:1;min-width:0;">
+              <div class="task-name-row">
+                ${esc(t.name)} ${cfTag}
+                <span class="badge pri-${t.priority}" style="font-size:.62rem;">${t.priority.toUpperCase()}</span>
+              </div>
+              <div class="task-info">
+                ${t.status.charAt(0).toUpperCase()+t.status.slice(1)}
+                ${t.dueDate?` &nbsp;·&nbsp; Due: ${t.dueDate}`:''}
+                ${t.notes?` &nbsp;·&nbsp; ${esc(t.notes)}`:''}
+              </div>
+            </div>
+            <div class="task-actions">
+              <select onchange="changeTaskStatus(${idx},${ti},this.value)">
+                <option value="pending" ${t.status==='pending'?'selected':''}>Pending</option>
+                <option value="progress" ${t.status==='progress'?'selected':''}>In Progress</option>
+                <option value="done" ${t.status==='done'?'selected':''}>Completed</option>
+                <option value="hold" ${t.status==='hold'?'selected':''}>Hold</option>
+              </select>
+              <button class="small-btn" onclick="openEditTask(${idx},${ti})" title="Edit task">✏️</button>
+              <button class="small-btn del-btn" onclick="deleteTask(${idx},${ti})" title="Delete">✕</button>
+            </div>
+          </div>`;
+      });
+
+      const div=document.createElement('div');
+      div.className='project-card';
+      div.innerHTML=`
+        <div class="proj-top">
+          <div style="flex:1;min-width:0;">
+            <div class="proj-name">${esc(proj.name)}</div>
+            <div class="proj-meta">
+              👤 ${esc(proj.owner||'—')} &nbsp;·&nbsp;
+              🗂 ${esc(proj.category||'—')} &nbsp;·&nbsp;
+              📅 ${proj.start||'—'} → ${proj.end||'—'}
+            </div>
+          </div>
+          <span class="badge ${proj.status}">${sLabel(proj.status)}</span>
+        </div>
+        ${proj.desc?`<div class="proj-meta" style="margin-top:10px;font-style:italic;">${esc(proj.desc)}</div>`:''}
+        <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">${done}/${total} tasks completed &nbsp;·&nbsp; ${pct}%</div>
+        <div class="task-list">${taskHTML||'<div class="proj-meta" style="margin-top:8px;padding:8px 0;">No tasks yet. Click "+ Add Task" to begin.</div>'}</div>
+        <div class="proj-actions">
+          <button class="small-btn" onclick="openAddTask(${idx})">+ Add Task</button>
+          <button class="small-btn" onclick="editProject(${idx})">✏️ Edit Project</button>
+          <button class="small-btn del-btn" onclick="deleteProject(${idx})">🗑 Delete</button>
+        </div>`;
+      container.appendChild(div);
+    });
+  }
+  updateStats(allProjects);
+  updateDashboard(allProjects);
+}
+
+// ── STATS ──────────────────────────────────────────────────────────────
+function updateStats(projects){
+  document.getElementById('sOngoing').textContent=projects.filter(p=>p.status==='progress').length;
+  document.getElementById('sDone').textContent=projects.filter(p=>p.status==='done').length;
+  document.getElementById('sPending').textContent=projects.filter(p=>p.status==='pending').length;
+  document.getElementById('sHold').textContent=projects.filter(p=>p.status==='hold').length;
+  let totalT=0,highT=0;
+  projects.forEach(p=>{ totalT+=p.tasks.length; highT+=p.tasks.filter(t=>t.priority==='high'||t.priority==='critical').length; });
+  document.getElementById('sTasks').textContent=totalT;
+  document.getElementById('sHigh').textContent=highT;
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────
+function updateDashboard(projects){
+  const cm=new Date().getMonth(),cy=new Date().getFullYear();
+  const monthDone=projects.filter(p=>{
+    if(!p.end||p.status!=='done')return false;
+    const d=new Date(p.end);return d.getMonth()===cm&&d.getFullYear()===cy;
+  });
+  document.getElementById('dashMonth').innerHTML=monthDone.length
+    ? monthDone.map(p=>`<div class="dash-item">${esc(p.name)}</div>`).join('')
+    : '<div class="empty-msg">No completions yet this month.</div>';
+
+  const overdue=projects.filter(p=>p.end&&p.end<TODAY&&p.status!=='done'&&p.status!=='hold');
+  document.getElementById('dashOverdue').innerHTML=overdue.length
+    ? overdue.map(p=>`<div class="dash-item overdue-item">${esc(p.name)} <span style="color:var(--red);font-size:.7rem;margin-left:4px;">Due ${p.end}</span></div>`).join('')
+    : '<div class="empty-msg">No overdue items. 🎉</div>';
+
+  const top=projects.slice(0,6);
+  document.getElementById('dashProgress').innerHTML=top.length ? top.map(p=>{
+    const total=p.tasks.length,done=p.tasks.filter(t=>t.status==='done').length;
+    const pct=total>0?Math.round(done/total*100):0;
+    return `<div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:3px;">
+        <span style="font-weight:600;">${esc(p.name)}</span>
+        <span style="color:var(--muted);">${pct}%</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('') : '<div class="empty-msg">No projects yet.</div>';
+}
+
+// ── SUMMARY MODAL ──────────────────────────────────────────────────────
+function openSummaryModal(){
+  const projects=getProjects();
+  const el=document.getElementById('summaryContent');
+  if(!projects.length){ el.innerHTML='<p style="color:var(--muted);text-align:center;padding:20px;">No projects to summarize yet. Create a project first!</p>'; openOverlay('summaryOverlay'); return; }
+  let html='';
+  projects.forEach(p=>{
+    const pending=p.tasks.filter(t=>t.status!=='done');
+    const done=p.tasks.filter(t=>t.status==='done');
+    const high=p.tasks.filter(t=>t.priority==='high'||t.priority==='critical');
+    const pct=p.tasks.length>0?Math.round(done.length/p.tasks.length*100):0;
+    html+=`<div class="summary-block">
+      <div class="summary-block-title">📁 ${esc(p.name)}</div>
+      <p><strong>Status:</strong> ${sLabel(p.status)} &nbsp;·&nbsp; <strong>Owner:</strong> ${esc(p.owner||'—')} &nbsp;·&nbsp; <strong>Category:</strong> ${esc(p.category||'—')}</p>
+      <p style="margin-top:5px;"><strong>Timeline:</strong> ${p.start||'—'} → ${p.end||'—'}</p>
+      <p style="margin-top:5px;"><strong>Completion:</strong> ${done.length}/${p.tasks.length} tasks (${pct}%)</p>
+      <div class="prog-wrap" style="margin-top:8px;"><div class="prog-fill" style="width:${pct}%"></div></div>
+      ${pending.length?`<p style="margin-top:8px;"><strong>Pending Tasks:</strong></p><ul>${pending.map(t=>`<li>${esc(t.name)} [${t.priority.toUpperCase()}]</li>`).join('')}</ul>`:'<p style="margin-top:6px;color:var(--green);">✅ All tasks completed!</p>'}
+      ${high.length?`<p style="margin-top:6px;color:var(--red);"><strong>⚠ High Priority:</strong> ${high.map(t=>esc(t.name)).join(', ')}</p>`:''}
+      ${p.desc?`<p style="margin-top:7px;font-style:italic;"><strong>Notes:</strong> ${esc(p.desc)}</p>`:''}
+    </div>`;
+  });
+  el.innerHTML=html;
+  openOverlay('summaryOverlay');
+}
+
+// ── MONTHLY REPORT ─────────────────────────────────────────────────────
+function openMonthlyReport(){
+  const projects=getProjects();
+  const cm=new Date().getMonth(),cy=new Date().getFullYear();
+  const monthName=new Date().toLocaleString('default',{month:'long'});
+  const completed=projects.filter(p=>{
+    if(!p.end||p.status!=='done')return false;
+    const d=new Date(p.end);return d.getMonth()===cm&&d.getFullYear()===cy;
+  });
+  const overdue=projects.filter(p=>p.end&&p.end<TODAY&&p.status!=='done'&&p.status!=='hold');
+  let allT=[],doneT=[],pendingT=[],cfT=[];
+  projects.forEach(p=>{
+    allT.push(...p.tasks);
+    doneT.push(...p.tasks.filter(t=>t.status==='done'));
+    pendingT.push(...p.tasks.filter(t=>t.status==='pending'||t.status==='progress'));
+    cfT.push(...p.tasks.filter(t=>t.carriedForward));
+  });
+  const prod=allT.length>0?Math.round(doneT.length/allT.length*100):0;
+  document.getElementById('monthlyContent').innerHTML=`
+    <div class="summary-block">
+      <div class="summary-block-title">📅 Report Period: ${monthName} ${cy}</div>
+      <p><strong>Projects Completed:</strong> ${completed.length}</p>
+      <p><strong>Projects Overdue:</strong> ${overdue.length}</p>
+      <p><strong>Total Tasks:</strong> ${allT.length} &nbsp;·&nbsp; <strong>Completed:</strong> ${doneT.length} &nbsp;·&nbsp; <strong>Pending:</strong> ${pendingT.length}</p>
+      <p><strong>Carried-Forward Tasks:</strong> ${cfT.length}</p>
+      <p><strong>Productivity Rate:</strong> ${prod}%</p>
+      <div class="prog-wrap" style="margin-top:8px;"><div class="prog-fill" style="width:${prod}%"></div></div>
+    </div>
+    ${completed.length?`<div class="summary-block"><div class="summary-block-title">✅ Completed Projects</div><ul>${completed.map(p=>`<li>${esc(p.name)} — ${esc(p.owner||'—')}</li>`).join('')}</ul></div>`:''}
+    ${overdue.length?`<div class="summary-block"><div class="summary-block-title">⚠ Overdue Projects</div><ul>${overdue.map(p=>`<li>${esc(p.name)} (Due: ${p.end})</li>`).join('')}</ul></div>`:''}
+    ${cfT.length?`<div class="summary-block"><div class="summary-block-title">↩ Carried-Forward Tasks</div><ul>${cfT.map(t=>`<li>${esc(t.name)} [${t.priority.toUpperCase()}]</li>`).join('')}</ul></div>`:''}
+    <div class="summary-block">
+      <div class="summary-block-title">📈 Workflow Insights</div>
+      <p>${prod>=70?'✅ Strong execution this month. Productivity is on track.':prod>=40?'⚠ Moderate productivity. Review pending tasks and blockers.':'🔴 Low completion rate. Immediate operational review recommended.'}</p>
+      <p style="margin-top:5px;">Carry-forward backlog: ${cfT.length} — ${cfT.length>5?'High backlog. Recommend task triage.':'Within acceptable range.'}</p>
+    </div>`;
+  openOverlay('monthlyOverlay');
+}
+
+// ── PDF EXPORTS ────────────────────────────────────────────────────────
+function exportSummaryPDF(){
+  if(!window.jspdf){alert('PDF library still loading. Try again in a moment.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const projects=getProjects();
+  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  doc.setFillColor(7,17,31);doc.rect(0,0,210,30,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(0,229,255);doc.text('NexaPlan',14,14);
+  doc.setFontSize(9);doc.setTextColor(148,163,184);doc.text('Workflow Summary Report',14,21);doc.text(`Generated: ${today}`,140,21);
+  let y=40;
+  if(!projects.length){ doc.setTextColor(100,100,120);doc.text('No projects found.',14,y); }
+  projects.forEach(p=>{
+    if(y>250){doc.addPage();y=20;}
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(30,58,138);doc.text(p.name,14,y);y+=6;
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,80);
+    const done=p.tasks.filter(t=>t.status==='done');
+    const pending=p.tasks.filter(t=>t.status!=='done');
+    const lines=[
+      `Status: ${sLabel(p.status)}   |   Owner: ${p.owner||'—'}   |   Category: ${p.category||'—'}`,
+      `Timeline: ${p.start||'—'} → ${p.end||'—'}`,
+      `Tasks: ${done.length}/${p.tasks.length} completed`
+    ];
+    if(pending.length) lines.push(`Pending: ${pending.map(t=>t.name).join(', ')}`);
+    if(p.desc) lines.push(`Notes: ${p.desc}`);
+    lines.forEach(line=>{const w=doc.splitTextToSize(line,180);doc.text(w,14,y);y+=w.length*5;});
+    doc.setDrawColor(220,220,230);doc.line(14,y+2,196,y+2);y+=10;
+  });
+  doc.save('NexaPlan_Summary.pdf');
+}
+
+function exportMonthlyPDF(){
+  if(!window.jspdf){alert('PDF library still loading. Try again in a moment.');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const projects=getProjects();
+  const today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  const monthName=new Date().toLocaleString('default',{month:'long',year:'numeric'});
+  doc.setFillColor(7,17,31);doc.rect(0,0,210,30,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(18);doc.setTextColor(0,229,255);doc.text('NexaPlan',14,14);
+  doc.setFontSize(9);doc.setTextColor(148,163,184);doc.text(`Monthly Report — ${monthName}`,14,21);doc.text(`Generated: ${today}`,140,21);
+  let y=42;
+  const cm=new Date().getMonth(),cy=new Date().getFullYear();
+  const completed=projects.filter(p=>{if(!p.end||p.status!=='done')return false;const d=new Date(p.end);return d.getMonth()===cm&&d.getFullYear()===cy;});
+  const overdue=projects.filter(p=>p.end&&p.end<TODAY&&p.status!=='done'&&p.status!=='hold');
+  let allT=0,doneT=0,pendingT=0,cfT=0;
+  projects.forEach(p=>{allT+=p.tasks.length;doneT+=p.tasks.filter(t=>t.status==='done').length;pendingT+=p.tasks.filter(t=>t.status==='pending'||t.status==='progress').length;cfT+=p.tasks.filter(t=>t.carriedForward).length;});
+  const prod=allT>0?Math.round(doneT/allT*100):0;
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(30,58,138);doc.text('Executive Summary',14,y);y+=7;
+  const rows=[['Metric','Value'],['Projects Completed This Month',String(completed.length)],['Projects Overdue',String(overdue.length)],['Total Tasks',String(allT)],['Completed Tasks',String(doneT)],['Pending Tasks',String(pendingT)],['Carried-Forward Tasks',String(cfT)],['Productivity Rate',`${prod}%`]];
+  doc.setFontSize(9);
+  rows.forEach((r,i)=>{
+    if(i===0)doc.setFont('helvetica','bold');else doc.setFont('helvetica','normal');
+    doc.setTextColor(60,60,80);doc.text(r[0],14,y);doc.text(r[1],150,y);y+=6;
+  });
+  y+=4;
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(30,58,138);doc.text('Workflow Insights',14,y);y+=7;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(60,60,80);
+  const ins=prod>=70?'Strong execution. Productivity on track.':prod>=40?'Moderate productivity. Review pending tasks.':'Low completion rate. Operational review recommended.';
+  const w=doc.splitTextToSize(ins,180);doc.text(w,14,y);y+=w.length*5+4;
+  if(overdue.length){doc.setFont('helvetica','bold');doc.setTextColor(190,18,60);doc.text('Overdue Projects:',14,y);y+=5;doc.setFont('helvetica','normal');doc.setTextColor(60,60,80);overdue.forEach(p=>{doc.text(`• ${p.name} (Due: ${p.end})`,18,y);y+=5;});}
+  doc.save('NexaPlan_Monthly_Report.pdf');
+}
+
+// ── OVERLAY HELPERS ────────────────────────────────────────────────────
+function openOverlay(id){ document.getElementById(id).classList.add('open'); }
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); }
+function closeIfBg(e,id){ if(e.target===document.getElementById(id)) closeOverlay(id); }
+
+// ── INIT ───────────────────────────────────────────────────────────────
+window.onload=function(){
+  if(localStorage.getItem('nexaTheme')==='light') document.body.classList.add('light');
+  render();
+};
+</script>
+</body>
+</html>
