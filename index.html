@@ -470,7 +470,7 @@ body.light .btn-cls{background:#e8f0fe;}
 const SUPABASE_URL = 'https://enmeotnzofgnrmykovpf.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVubWVvdG56b2ZnbnJteWtvdnBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDA4MzAsImV4cCI6MjA5NDU3NjgzMH0.PXOMfJ1PLxvourQ2sJm4NOVF8jaJ-oXs8BqbdOv9WCg';
 if (!window.supabase) { document.body.innerHTML = '<div style="color:red;text-align:center;padding:40px;font-family:sans-serif"><h2>Failed to load Supabase SDK</h2><p>Check your internet connection and reload.</p></div>'; throw new Error("Supabase SDK not loaded"); }
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Change this to your own secret invite code anytime
 const INVITE_CODE = 'NEXAPLAN2025';
@@ -485,7 +485,7 @@ const TODAY = new Date().toISOString().split('T')[0];
 
 window.onload = async function() {
   if(localStorage.getItem('nexaTheme') === 'light') document.body.classList.add('light');
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if(session) { currentUser = session.user; showApp(); }
   else { showAuth(); }
 };
@@ -506,7 +506,7 @@ async function handleLogin() {
   const btn=document.getElementById('loginBtn');
   if(!email||!password){showMsg('loginMsg','Please fill in all fields.','error');return;}
   btn.disabled=true;btn.textContent='Logging in...';
-  const {data,error}=await supabase.auth.signInWithPassword({email,password});
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
   if(error){showMsg('loginMsg',error.message,'error');btn.disabled=false;btn.textContent='Login to NexaPlan';}
   else{currentUser=data.user;showMsg('loginMsg','✅ Welcome back!','success');setTimeout(()=>showApp(),800);}
 }
@@ -520,7 +520,7 @@ async function handleSignup() {
   if(!name||!email||!password||!invite){showMsg('signupMsg','Please fill all fields.','error');return;}
   if(invite!==INVITE_CODE){showMsg('signupMsg','❌ Invalid invite code. Contact Sarthak for access.','error');return;}
   btn.disabled=true;btn.textContent='Creating account...';
-  const {error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name}}});
+  const {error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}}});
   if(error){showMsg('signupMsg',error.message,'error');btn.disabled=false;btn.textContent='Create Account';}
   else{showMsg('signupMsg','✅ Account created! Check your email to verify, then login.','success');btn.disabled=false;btn.textContent='Create Account';}
 }
@@ -530,18 +530,18 @@ async function handleRequest() {
   const email=document.getElementById('reqEmail').value.trim();
   const reason=document.getElementById('reqReason').value.trim();
   if(!name||!email){showMsg('requestMsg','Name and email are required.','error');return;}
-  await supabase.from('access_requests').insert([{name,email,reason,status:'pending',created_at:new Date().toISOString()}]);
+  await sb.from('access_requests').insert([{name,email,reason,status:'pending',created_at:new Date().toISOString()}]);
   showMsg('requestMsg','✅ Request submitted! Sarthak will review and contact you at '+email,'success');
 }
 
 async function handleLogout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   currentUser=null;projects=[];
   showAuth();toast('👋 Logged out.');
 }
 
 async function loadProjects() {
-  const {data,error}=await supabase.from('projects').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  const {data,error}=await sb.from('projects').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
   projects=error?[]:data||[];
   render();
 }
@@ -551,11 +551,11 @@ async function saveProject() {
   if(!name){alert('Project name is required.');return;}
   const projData={user_id:currentUser.id,name,status:document.getElementById('pStatus').value,start_date:document.getElementById('pStart').value||null,end_date:document.getElementById('pEnd').value||null,owner:document.getElementById('pOwner').value.trim(),category:document.getElementById('pCat').value.trim(),notes:document.getElementById('pDesc').value.trim(),tasks:editProjIdx!==null?projects[editProjIdx].tasks:[]};
   if(editProjIdx!==null){
-    const {error}=await supabase.from('projects').update(projData).eq('id',projects[editProjIdx].id).eq('user_id',currentUser.id);
+    const {error}=await sb.from('projects').update(projData).eq('id',projects[editProjIdx].id).eq('user_id',currentUser.id);
     if(error){alert('Error: '+error.message);return;}
     toast('✅ Project updated!');
   } else {
-    const {error}=await supabase.from('projects').insert([projData]);
+    const {error}=await sb.from('projects').insert([projData]);
     if(error){alert('Error: '+error.message);return;}
     toast('✅ Project created!');
   }
@@ -564,7 +564,7 @@ async function saveProject() {
 
 async function deleteProject(idx) {
   if(!confirm('Remove this project?'))return;
-  const {error}=await supabase.from('projects').delete().eq('id',projects[idx].id).eq('user_id',currentUser.id);
+  const {error}=await sb.from('projects').delete().eq('id',projects[idx].id).eq('user_id',currentUser.id);
   if(error){alert('Error: '+error.message);return;}
   toast('🗑 Deleted.');loadProjects();
 }
@@ -575,7 +575,7 @@ async function saveTask() {
   const task={id:editTaskIdx!==null?projects[taskProjIdx].tasks[editTaskIdx].id:Date.now(),name,priority:document.getElementById('tPriority').value,dueDate:document.getElementById('tDue').value,notes:document.getElementById('tNotes').value.trim(),status:editTaskIdx!==null?projects[taskProjIdx].tasks[editTaskIdx].status:'pending',carriedForward:false,createdAt:new Date().toISOString()};
   const updatedTasks=[...projects[taskProjIdx].tasks];
   if(editTaskIdx!==null){updatedTasks[editTaskIdx]=task;}else{updatedTasks.push(task);}
-  const {error}=await supabase.from('projects').update({tasks:updatedTasks}).eq('id',projects[taskProjIdx].id).eq('user_id',currentUser.id);
+  const {error}=await sb.from('projects').update({tasks:updatedTasks}).eq('id',projects[taskProjIdx].id).eq('user_id',currentUser.id);
   if(error){alert('Error: '+error.message);return;}
   toast(editTaskIdx!==null?'✅ Task updated!':'✅ Task added!');
   closeOverlay('taskOverlay');loadProjects();
@@ -585,14 +585,14 @@ async function changeTaskStatus(pi,ti,status) {
   const updatedTasks=[...projects[pi].tasks];
   updatedTasks[ti].status=status;
   if(status==='done'){updatedTasks[ti].completedAt=new Date().toISOString();updatedTasks[ti].carriedForward=false;}
-  await supabase.from('projects').update({tasks:updatedTasks}).eq('id',projects[pi].id).eq('user_id',currentUser.id);
+  await sb.from('projects').update({tasks:updatedTasks}).eq('id',projects[pi].id).eq('user_id',currentUser.id);
   loadProjects();
 }
 
 async function deleteTask(pi,ti) {
   if(!confirm('Remove task?'))return;
   const updatedTasks=[...projects[pi].tasks];updatedTasks.splice(ti,1);
-  await supabase.from('projects').update({tasks:updatedTasks}).eq('id',projects[pi].id).eq('user_id',currentUser.id);
+  await sb.from('projects').update({tasks:updatedTasks}).eq('id',projects[pi].id).eq('user_id',currentUser.id);
   toast('🗑 Task removed.');loadProjects();
 }
 
