@@ -556,6 +556,28 @@ const TODAY = new Date().toISOString().split('T')[0];
 
 window.onload = async function() {
   if(localStorage.getItem('nexaTheme') === 'light') document.body.classList.add('light');
+
+  // Handle email verification token from URL hash
+  const hash = window.location.hash;
+  if(hash && hash.includes('access_token')){
+    const params = new URLSearchParams(hash.substring(1));
+    const accessToken = params.get('access_token');
+    const type = params.get('type');
+    if(accessToken && (type === 'signup' || type === 'recovery')){
+      const { data, error } = await sb.auth.setSession({
+        access_token: accessToken,
+        refresh_token: params.get('refresh_token') || ''
+      });
+      window.history.replaceState(null, '', window.location.pathname);
+      if(data?.user){
+        currentUser = data.user;
+        showApp();
+        toast('✅ Email verified! Welcome to NexaPlan!');
+        return;
+      }
+    }
+  }
+
   const { data: { session } } = await sb.auth.getSession();
   if(session) { currentUser = session.user; showApp(); }
   else { showAuth(); }
