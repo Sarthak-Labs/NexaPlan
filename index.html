@@ -584,7 +584,16 @@ window.onload = async function() {
 };
 
 function showAuth() { document.getElementById('loaderScreen').style.display='none'; document.getElementById('authScreen').style.display='flex'; document.getElementById('appScreen').style.display='none'; }
-function showApp() { document.getElementById('loaderScreen').style.display='none'; document.getElementById('authScreen').style.display='none'; document.getElementById('appScreen').style.display='block'; document.getElementById('userBadge').textContent='👤 '+currentUser.email; loadProjects(); loadAccessRequests(); }
+function showApp() {
+  document.getElementById('loaderScreen').style.display='none';
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('appScreen').style.display='block';
+  document.getElementById('userBadge').textContent='👤 '+currentUser.email;
+  // Always hide admin panel first — only loadAccessRequests() can show it if isAdmin()
+  document.getElementById('adminPanel').style.display='none';
+  loadProjects();
+  loadAccessRequests();
+}
 
 function switchTab(tab, btn) {
   ['login','signup','request'].forEach(t => document.getElementById(t+'Form').style.display='none');
@@ -765,7 +774,10 @@ function switchReqTab(tab, btn){
 let allRequests = [];
 
 async function loadAccessRequests(){
-  if(!isAdmin()) return;
+  if(!isAdmin()){
+    document.getElementById('adminPanel').style.display='none';
+    return;
+  }
   document.getElementById('adminPanel').style.display = 'block';
   const {data,error} = await sb.from('access_requests').select('*').order('created_at',{ascending:false});
   if(error||!data){ document.getElementById('reqList').innerHTML='<div class="admin-empty">Failed to load requests.</div>'; return; }
