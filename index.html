@@ -601,7 +601,7 @@ window.onload = async function() {
 };
 
 function showAuth() { document.getElementById('loaderScreen').style.display='none'; document.getElementById('authScreen').style.display='flex'; document.getElementById('appScreen').style.display='none'; }
-function showApp() {
+async function showApp() {
   document.getElementById('loaderScreen').style.display='none';
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
