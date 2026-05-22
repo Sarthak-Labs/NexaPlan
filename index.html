@@ -538,9 +538,26 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 if(!window.supabase){document.body.innerHTML='<div style="color:red;text-align:center;padding:40px;font-family:sans-serif"><h2>Supabase SDK failed to load</h2><p>Check your internet connection.</p></div>';throw new Error("Supabase not loaded");}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Change this to your own secret invite code anytime
-const INVITE_CODE = 'NEXAPLAN2025';
-const ADMIN_USER_ID = '6a9d207a-ed6f-41dc-b6c2-c9fdec67a10c';
+let INVITE_CODE, ADMIN_USER_ID;
+
+async function loadConfig() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+  
+  const res = await fetch(
+    'https://enmeotnzofgnrmykovpf.supabase.co/functions/v1/get-config',
+    {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    }
+  );
+  const config = await res.json();
+  INVITE_CODE = config.inviteCode;
+  ADMIN_USER_ID = config.adminUserId;
+}
+
 const EMAILJS_SERVICE_ID  = 'nexaplan_gmail';
 const EMAILJS_TEMPLATE_ID = 'template_abn65nq';
 const EMAILJS_PUBLIC_KEY  = 'ZRwTjza2I3ti8GlPH';
@@ -591,6 +608,7 @@ function showApp() {
   document.getElementById('userBadge').textContent='👤 '+currentUser.email;
   // Always hide admin panel first — only loadAccessRequests() can show it if isAdmin()
   document.getElementById('adminPanel').style.display='none';
+  await loadConfig();
   loadProjects();
   loadAccessRequests();
 }
