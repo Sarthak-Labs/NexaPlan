@@ -499,7 +499,7 @@ body.light .req-tab.active{color:#fff;}
 
   <!-- Bottom bar -->
   <div class="footer-bottom">
-    <p>© 2025 NexaPlan · Built by <a href="https://www.linkedin.com/in/sarthakgupta-ai" target="_blank">Sarthak Gupta</a> · All rights reserved.</p>
+    <p>© 2026 NexaPlan · Built by <a href="https://www.linkedin.com/in/sarthakgupta-ai" target="_blank">Sarthak Gupta</a> · All rights reserved.</p>
     <p style="font-size:.74rem;">Noida, India &nbsp;·&nbsp; Powered by Supabase &nbsp;·&nbsp; <span style="color:var(--green);">●</span> Live</p>
   </div>
 </footer>
@@ -538,30 +538,25 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 if(!window.supabase){document.body.innerHTML='<div style="color:red;text-align:center;padding:40px;font-family:sans-serif"><h2>Supabase SDK failed to load</h2><p>Check your internet connection.</p></div>';throw new Error("Supabase not loaded");}
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let INVITE_CODE, ADMIN_USER_ID;
-
-async function loadConfig() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) return;
-  
-  const res = await fetch(
-    'https://enmeotnzofgnrmykovpf.supabase.co/functions/v1/get-config',
-    {
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json'
-      }
-    }
-  );
-  const config = await res.json();
-  INVITE_CODE = config.inviteCode;
-  ADMIN_USER_ID = config.adminUserId;
-}
-
 const EMAILJS_SERVICE_ID  = 'nexaplan_gmail';
 const EMAILJS_TEMPLATE_ID = 'template_abn65nq';
 const EMAILJS_PUBLIC_KEY  = 'ZRwTjza2I3ti8GlPH';
 emailjs.init(EMAILJS_PUBLIC_KEY);
+
+// ── Secure config fetcher — values never exposed in browser ──
+let _cfg = null;
+async function getConfig() {
+  if (_cfg) return _cfg;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token || SUPABASE_ANON_KEY;
+    const res = await fetch(SUPABASE_URL + '/functions/v1/get-config', {
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+    });
+    _cfg = await res.json();
+    return _cfg;
+  } catch(e) { console.error('Config fetch failed', e); return {}; }
+}
 
 let currentUser = null;
 let projects = [];
@@ -601,14 +596,13 @@ window.onload = async function() {
 };
 
 function showAuth() { document.getElementById('loaderScreen').style.display='none'; document.getElementById('authScreen').style.display='flex'; document.getElementById('appScreen').style.display='none'; }
-async function showApp() {
+function showApp() {
   document.getElementById('loaderScreen').style.display='none';
   document.getElementById('authScreen').style.display='none';
   document.getElementById('appScreen').style.display='block';
   document.getElementById('userBadge').textContent='👤 '+currentUser.email;
   // Always hide admin panel first — only loadAccessRequests() can show it if isAdmin()
   document.getElementById('adminPanel').style.display='none';
-  await loadConfig();
   loadProjects();
   loadAccessRequests();
 }
@@ -638,8 +632,13 @@ async function handleSignup() {
   const invite=document.getElementById('signupInvite').value.trim().toUpperCase();
   const btn=document.getElementById('signupBtn');
   if(!name||!email||!password||!invite){showMsg('signupMsg','Please fill all fields.','error');return;}
-  if(invite!==INVITE_CODE){showMsg('signupMsg','❌ Invalid invite code. Contact Sarthak for access.','error');return;}
-  btn.disabled=true;btn.textContent='Creating account...';
+  btn.disabled=true;btn.textContent='Verifying code...';
+  const cfg = await getConfig();
+  if(!cfg.inviteCode||invite!==cfg.inviteCode.toUpperCase()){
+    showMsg('signupMsg','❌ Invalid invite code. Contact Sarthak for access.','error');
+    btn.disabled=false;btn.textContent='Create Account';return;
+  }
+  btn.textContent='Creating account...';
   const {error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}}});
   if(error){showMsg('signupMsg',error.message,'error');btn.disabled=false;btn.textContent='Create Account';}
   else{showMsg('signupMsg','✅ Account created! Check your email to verify, then login.','success');btn.disabled=false;btn.textContent='Create Account';}
@@ -780,7 +779,11 @@ function confirmLogout(){
 // ── Admin panel ──────────────────────────────────────────────────
 let currentReqTab = 'pending';
 
-function isAdmin(){ return currentUser && currentUser.id === ADMIN_USER_ID; }
+async function isAdmin() {
+  if(!currentUser) return false;
+  const cfg = await getConfig();
+  return currentUser.id === cfg.adminUserId;
+}
 
 function switchReqTab(tab, btn){
   currentReqTab = tab;
@@ -792,7 +795,8 @@ function switchReqTab(tab, btn){
 let allRequests = [];
 
 async function loadAccessRequests(){
-  if(!isAdmin()){
+  const admin = await isAdmin();
+  if(!admin){
     document.getElementById('adminPanel').style.display='none';
     return;
   }
@@ -838,17 +842,17 @@ async function approveRequest(id, email, name, btn){
   btn.disabled=true; btn.textContent='Sending...';
   const {error} = await sb.from('access_requests').update({status:'approved'}).eq('id',id);
   if(error){ toast('❌ Failed to approve.'); btn.disabled=false; btn.textContent='✓ Approve'; return; }
-  // Send email via EmailJS
+  const cfg = await getConfig();
   try {
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email: email,
       to_name: name,
-      invite_code: INVITE_CODE
+      invite_code: cfg.inviteCode || 'Contact Sarthak'
     });
     toast('✅ Approved & invite email sent to '+name+'!');
   } catch(e) {
     console.error('EmailJS error:',e);
-    toast('✅ Approved! Email failed — manually share code: '+INVITE_CODE);
+    toast('✅ Approved! Email failed — manually share code.');
   }
   allRequests = allRequests.map(r=>r.id===id?{...r,status:'approved'}:r);
   const pending = allRequests.filter(r=>r.status==='pending');
